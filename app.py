@@ -11,7 +11,7 @@ SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 TELEGRAM_API = f"https://api.telegram.org/bot{TOKEN}"
 MOVIES_API = f"{SUPABASE_URL}/rest/v1/movies"
 
-app = Flask(__name__)
+app = Flask(name)
 
 
 def telegram(method, data):
@@ -171,9 +171,10 @@ def webhook():
                     "❌ Video yoki faylga reply qilib /add 1001 yozing.",
                 )
                 return "OK", 200
+send_text(
                 chat_id,
                 f"✅ Kino doimiy bazaga qo‘shildi.\nKodi: {code}",
-            
+            )
             return "OK", 200
 
         if text.startswith("/delete "):
@@ -238,5 +239,4 @@ def webhook():
     except Exception as error:
         print(f"Bot xatosi: {error}", flush=True)
         return "OK", 200
-
             save_movie(code, file_id, media_type)
