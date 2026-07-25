@@ -170,7 +170,7 @@ def webhook():
                     chat_id,
                     "❌ Video yoki faylga reply qilib /add 1001 yozing.",
                 )
-                return "OK", 200send_text(
+                return "OK", 200
                 chat_id,
                 f"✅ Kino doimiy bazaga qo‘shildi.\nKodi: {code}",
             )
