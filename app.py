@@ -11,7 +11,7 @@ SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 TELEGRAM_API = f"https://api.telegram.org/bot{TOKEN}"
 MOVIES_API = f"{SUPABASE_URL}/rest/v1/movies"
 
-app = Flask(name)
+app = Flask(__name__)
 
 
 def telegram(method, data):
@@ -59,12 +59,9 @@ def get_movie(code):
     )
 
     response.raise_for_status()
-    movies = response.json()
+    rows = response.json()
 
-    if movies:
-        return movies[0]
-
-    return None
+    return rows[0] if rows else None
 
 
 def save_movie(code, file_id, media_type):
@@ -113,11 +110,8 @@ def webhook():
         update = request.get_json(silent=True) or {}
         message = update.get("message") or {}
 
-        chat = message.get("chat") or {}
-        sender = message.get("from") or {}
-
-        chat_id = chat.get("id")
-        user_id = sender.get("id")
+        chat_id = (message.get("chat") or {}).get("id")
+        user_id = (message.get("from") or {}).get("id")
 
         if not chat_id:
             return "OK", 200
@@ -140,19 +134,20 @@ def webhook():
 
         if text.startswith("/add "):
             if user_id != ADMIN_ID:
-                send_text(chat_id, "❌ Siz admin emassiz.")
+                send_text(
+                    chat_id,
+                    "❌ Siz admin emassiz.",
+                )
                 return "OK", 200
 
             parts = text.split(maxsplit=1)
-
-            if len(parts) != 2:
-                send_text(chat_id, "❌ Masalan: /add 1001")
-                return "OK", 200
-
-            code = parts[1].strip()
+            code = parts[1].strip() if len(parts) == 2 else ""
 
             if not code.isdigit():
-                send_text(chat_id, "❌ Kod faqat raqam bo‘lsin.")
+                send_text(
+                    chat_id,
+                    "❌ Masalan: /add 1001",
+                )
                 return "OK", 200
 
             reply = message.get("reply_to_message") or {}
@@ -171,7 +166,14 @@ def webhook():
                     "❌ Video yoki faylga reply qilib /add 1001 yozing.",
                 )
                 return "OK", 200
-send_text(
+
+            save_movie(
+                code,
+                file_id,
+                media_type,
+            )
+
+            send_text(
                 chat_id,
                 f"✅ Kino doimiy bazaga qo‘shildi.\nKodi: {code}",
             )
@@ -179,16 +181,22 @@ send_text(
 
         if text.startswith("/delete "):
             if user_id != ADMIN_ID:
-                send_text(chat_id, "❌ Siz admin emassiz.")
+                send_text(
+                    chat_id,
+                    "❌ Siz admin emassiz.",
+                )
                 return "OK", 200
 
             parts = text.split(maxsplit=1)
+            code = parts[1].strip() if len(parts) == 2 else ""
 
-            if len(parts) != 2:
-                send_text(chat_id, "❌ Masalan: /delete 1001")
+            if not code:
+                send_text(
+                    chat_id,
+                    "❌ Masalan: /delete 1001",
+                )
                 return "OK", 200
 
-            code = parts[1].strip()
             delete_movie(code)
 
             send_text(
@@ -201,7 +209,10 @@ send_text(
             movie = get_movie(text)
 
             if not movie:
-                send_text(chat_id, "❌ Bunday kino kodi topilmadi.")
+                send_text(
+                    chat_id,
+                    "❌ Bunday kino kodi topilmadi.",
+                )
                 return "OK", 200
 
             if movie["media_type"] == "video":
@@ -233,10 +244,15 @@ send_text(
         return "OK", 200
 
     except requests.RequestException as error:
-        print(f"API xatosi: {error}", flush=True)
+        print(
+            f"API xatosi: {error}",
+            flush=True,
+        )
         return "OK", 200
 
     except Exception as error:
-        print(f"Bot xatosi: {error}", flush=True)
+        print(
+            f"Bot xatosi: {error}",
+            flush=True,
+        )
         return "OK", 200
-            
