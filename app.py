@@ -9,7 +9,7 @@ TOKEN = os.environ["BOT_TOKEN"]
 ADMIN_ID = int(os.environ.get("ADMIN_ID", "0"))
 API_URL = f"https://api.telegram.org/bot{TOKEN}"
 
-app = Flask(name)
+app = Flask(__name__)
 
 DATA_FILE = Path("movies.json")
 
