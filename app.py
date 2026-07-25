@@ -173,7 +173,7 @@ def webhook():
                 return "OK", 200
                 chat_id,
                 f"✅ Kino doimiy bazaga qo‘shildi.\nKodi: {code}",
-            )
+            
             return "OK", 200
 
         if text.startswith("/delete "):
