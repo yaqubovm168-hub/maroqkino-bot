@@ -8,7 +8,8 @@ API_URL = f"https://api.telegram.org/bot{TOKEN}"
 app = Flask(__name__)
 
 # Kino kodi va Telegram video file_id
-MOVIES = {
+MOVIES = {Video file_id:
+BAACAgIAAxkBAANCamRLNkIHdEs_GwqCrGV8Mg_T3okAAsSZAALv4SlLG5DEa53_1Is9BA
     "1001": "",
 }
 
