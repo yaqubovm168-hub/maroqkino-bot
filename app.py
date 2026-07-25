@@ -37,18 +37,18 @@ def telegram(method, data):
     response = requests.post(
         f"{API_URL}/{method}",
         json=data,
-        timeout=30
+        timeout=30,
     )
     return response.json()
 
 
 def send_text(chat_id, text):
-    return telegram(
+    telegram(
         "sendMessage",
         {
             "chat_id": chat_id,
-            "text": text
-        }
+            "text": text,
+        },
     )
 
 
@@ -62,8 +62,11 @@ def webhook():
     update = request.get_json(silent=True) or {}
     message = update.get("message") or {}
 
-    chat_id = (message.get("chat") or {}).get("id")
-    user_id = (message.get("from") or {}).get("id")
+    chat = message.get("chat") or {}
+    sender = message.get("from") or {}
+
+    chat_id = chat.get("id")
+    user_id = sender.get("id")
 
     if not chat_id:
         return "OK", 200
@@ -73,34 +76,23 @@ def webhook():
     if text == "/start":
         send_text(
             chat_id,
-            "🎬 Kino kodini yuboring.\n\n"
-            "Masalan: 1001"
+            "🎬 Kino kodini yuboring.\nMasalan: 1001",
         )
         return "OK", 200
 
     if text == "/myid":
-        send_text(chat_id, f"Sizning Telegram ID raqamingiz:\n{user_id}")
-        return "OK", 200
-
-    if text == "/id":
-        reply = message.get("reply_to_message") or {}
-        media = reply.get("video") or reply.get("document") or {}
-        file_id = media.get("file_id")
-
-        if file_id:
-            send_text(chat_id, f"File ID:\n{file_id}")
-        else:
-            send_text(chat_id, "Video yoki faylga reply qilib /id yozing.")
-
+        send_text(
+            chat_id,
+            f"Sizning Telegram ID raqamingiz:\n{user_id}",
+        )
         return "OK", 200
 
     if text.startswith("/add "):
         if ADMIN_ID == 0:
             send_text(
                 chat_id,
-                "❌ ADMIN_ID hali sozlanmagan.\n"
-                "Avval /myid yuboring va chiqqan raqamni "
-                "Renderdagi ADMIN_ID ga qo‘ying."
+                "❌ ADMIN_ID hali Renderga qo‘shilmagan.\n"
+                "Avval /myid yuboring.",
             )
             return "OK", 200
 
@@ -110,33 +102,44 @@ def webhook():
 
         parts = text.split(maxsplit=1)
 
-        if len(parts) != 2 or not parts[1].isdigit():
+        if len(parts) != 2:
             send_text(chat_id, "❌ Masalan: /add 1001")
             return "OK", 200
 
-        code = parts[1]
+        code = parts[1].strip()
+
+        if not code.isdigit():
+            send_text(chat_id, "❌ Kod faqat raqam bo‘lsin.")
+            return "OK", 200
+
         reply = message.get("reply_to_message") or {}
 
         if reply.get("video"):
-            media_type = "video"
             file_id = reply["video"]["file_id"]
+            media_type = "video"
+
         elif reply.get("document"):
-            media_type = "document"
             file_id = reply["document"]["file_id"]
+            media_type = "document"
+
         else:
             send_text(
                 chat_id,
-                "❌ Video yoki faylga reply qilib /add 1001 yozing."
+                "❌ Video yoki faylga javob qilib /add 1001 yozing.",
             )
             return "OK", 200
 
         MOVIES[code] = {
             "file_id": file_id,
-            "type": media_type
+            "type": media_type,
         }
+
         save_movies(MOVIES)
 
-        send_text(chat_id, f"✅ Kino qo‘shildi.\nKodi: {code}")
+        send_text(
+            chat_id,
+            f"✅ Kino qo‘shildi.\nKodi: {code}",
+        )
         return "OK", 200
 
     if text.startswith("/delete "):
@@ -144,7 +147,13 @@ def webhook():
             send_text(chat_id, "❌ Siz admin emassiz.")
             return "OK", 200
 
-        code = text.split(maxsplit=1)[1]
+        parts = text.split(maxsplit=1)
+
+        if len(parts) != 2:
+            send_text(chat_id, "❌ Masalan: /delete 1001")
+            return "OK", 200
+
+        code = parts[1].strip()
 
         if code in MOVIES:
             del MOVIES[code]
@@ -157,18 +166,28 @@ def webhook():
 
     if text in MOVIES:
         movie = MOVIES[text]
-        method = "sendVideo" if movie["type"] == "video" else "sendDocument"
-        media_key = "video" if movie["type"] == "video" else "document"
-telegram(
-            method,
-            {
-                "chat_id": chat_id,
-                media_key: movie["file_id"],
-                "caption": f"🎬 Kino kodi: {text}"
-            }
-        )
+        file_id = movie["file_id"]
+        media_type = movie["type"]
+        if media_type == "video":
+            telegram(
+                "sendVideo",
+                {
+                    "chat_id": chat_id,
+                    "video": file_id,
+                    "caption": f"🎬 Kino kodi: {text}",
+                },
+            )
+        else:
+            telegram(
+                "sendDocument",
+                {
+                    "chat_id": chat_id,
+                    "document": file_id,
+                    "caption": f"🎬 Kino kodi: {text}",
+                },
+            )
+
         return "OK", 200
 
     send_text(chat_id, "❌ Bunday kino kodi topilmadi.")
     return "OK", 200
-        
