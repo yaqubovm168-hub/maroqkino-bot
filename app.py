@@ -5,7 +5,7 @@ from flask import Flask, request
 TOKEN = os.environ["BOT_TOKEN"]
 API_URL = f"https://api.telegram.org/bot{TOKEN}"
 
-app = Flask(name)
+app aapp = Flask(__name__)
 
 # Kino kodi va Telegram video file_id
 MOVIES = {
